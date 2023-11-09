@@ -1,0 +1,95 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#define COLUMNAS 3002
+#define FILAS 50
+#define LONGITUD 23240
+#define MAX_LONGITUD 100
+
+int main() {
+    FILE *archivo_csv = fopen("emails.csv", "r");
+    if (!archivo_csv) {
+        perror("Error al abrir el archivo CSV");
+        return 1;
+    }
+
+    char linea[LONGITUD];
+    int conteo_palabras[COLUMNAS] = {0};
+    char nombres_palabras[COLUMNAS][MAX_LONGITUD];
+    int fila_inicio = 182109 % 1000; 
+    int fila_actual = 0;
+
+    
+    if (fgets(linea, sizeof(linea), archivo_csv)) {
+        int columna = 0;
+        int indice_palabra = 0;
+        
+        for (int i = 0; linea[i] != '\0' && columna < COLUMNAS; ++i) {
+            
+            if (linea[i] == ',' || linea[i] == '\n') {
+                nombres_palabras[columna][indice_palabra] = '\0';
+                columna++;
+                indice_palabra = 0;
+            } else if (linea[i] != '\r') { 
+                nombres_palabras[columna][indice_palabra++] = linea[i];
+                
+                if (indice_palabra == MAX_LONGITUD - 1) {
+                    nombres_palabras[columna][indice_palabra] = '\0';
+                    columna++;
+                    indice_palabra = 0;
+                }
+            }
+        }
+    } else {
+        perror("Error al leer la primera línea del archivo CSV");
+        fclose(archivo_csv);
+        return 1;
+    }
+
+    while (fila_actual < fila_inicio && fgets(linea, sizeof(linea), archivo_csv)) {
+        fila_actual++;
+    }
+
+    
+    while (fila_actual < fila_inicio + FILAS && fgets(linea, sizeof(linea), archivo_csv)) {
+        int columna = 0;
+        int indice_valor = 0;
+        char valor_actual[MAX_LONGITUD] = {0};
+
+        for (int i = 0; linea[i] != '\0' && columna < COLUMNAS; ++i) {
+            if (linea[i] == ',' || linea[i] == '\n') {
+                valor_actual[indice_valor] = '\0';
+                conteo_palabras[columna] += atoi(valor_actual);
+                columna++;
+                indice_valor = 0;
+            } else if (linea[i] != '\r') {
+                valor_actual[indice_valor++] = linea[i];
+                if (indice_valor == MAX_LONGITUD - 1) {
+                    valor_actual[indice_valor] = '\0';
+                    conteo_palabras[columna] += atoi(valor_actual);
+                    columna++;
+                    indice_valor = 0;
+                }
+            }
+        }
+        fila_actual++;
+    }
+
+    fclose(archivo_csv);
+
+    
+    FILE *archivo_salida = fopen("182109.txt", "w");
+    if (!archivo_salida) {
+        perror("Error al abrir el archivo de salida");
+        return 1;
+    }
+
+    for (int i = 0; i < COLUMNAS; i++) {
+        fprintf(archivo_salida, "%s, %d\n", nombres_palabras[i], conteo_palabras[i]);
+    }
+
+    fclose(archivo_salida);
+    printf("Los conteos de palabras han sido escritos en 182109.txt\n");
+
+    return 0;
+}
